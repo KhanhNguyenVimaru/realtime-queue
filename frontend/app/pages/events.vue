@@ -14,6 +14,7 @@ type EventRow = {
   host_id: number
   title: string
   description: string | null
+  img?: string | null
   starts_at: string | null
   ends_at: string | null
   created_at: string | null
@@ -23,6 +24,7 @@ type EventRow = {
 type EventPayload = {
   title: string
   description: string
+  img?: string | null
   starts_at: string
   ends_at: string
 }
@@ -37,7 +39,9 @@ const deleteError = ref('')
 
 const isCreateOpen = ref(false)
 const isEditOpen = ref(false)
+const isDetailOpen = ref(false)
 const editingEvent = ref<EventRow | null>(null)
+const detailEvent = ref<EventRow | null>(null)
 
 const search = ref('')
 const sortBy = ref<'latest' | 'oldest'>('latest')
@@ -149,6 +153,11 @@ function openEditModal(event: EventRow) {
   isEditOpen.value = true
 }
 
+function openDetailModal(event: EventRow) {
+  detailEvent.value = event
+  isDetailOpen.value = true
+}
+
 async function updateEvent(payload: EventPayload) {
   if (!editingEvent.value) {
     return
@@ -220,24 +229,29 @@ watch(sortBy, () => {
 <template>
   <div class="space-y-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-end">
-      <div class="hidden h-9 w-px bg-default/60 md:block" aria-hidden="true" />
-
       <div class="flex w-full flex-col gap-3 md:w-1/2 md:flex-row md:justify-end">
-        <UFormField name="search-events" class="w-full md:max-w-[240px]">
+        <UFormField name="search-events" class="w-full md:w-1/2">
           <UInput v-model="search" placeholder="Search by title or description" class="w-full" />
         </UFormField>
-
-        <UButton
-          color="primary"
-          variant="solid"
-          class="md:ml-2 w-fit"
-          icon="i-lucide-arrow-up-down"
-          @click="toggleSort"
-        >
-          {{ sortBy === 'latest' ? 'Newest' : 'Oldest' }}
-        </UButton>
       </div>
-       <UButton color="primary" variant="solid" icon="i-lucide-plus" @click="isCreateOpen = true">
+
+      <UButton
+        color="primary"
+        variant="solid"
+        class="md:ml-3 w-fit"
+        icon="i-lucide-arrow-up-down"
+        @click="toggleSort"
+      >
+        {{ sortBy === 'latest' ? 'Newest' : 'Oldest' }}
+      </UButton>
+
+      <UButton
+        color="primary"
+        variant="solid"
+        class="md:ml-3 w-fit"
+        icon="i-lucide-plus"
+        @click="isCreateOpen = true"
+      >
         New event
       </UButton>
     </div>
@@ -305,6 +319,16 @@ watch(sortBy, () => {
               <td class="px-4 py-4">
                 <div class="flex flex-wrap gap-2">
                   <UButton
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                    icon="i-lucide-eye"
+                    @click="openDetailModal(event)"
+                  >
+                    Detail
+                  </UButton>
+
+                  <UButton
                     color="primary"
                     variant="soft"
                     size="sm"
@@ -350,6 +374,11 @@ watch(sortBy, () => {
       :pending="pending"
       :error="formError"
       @submit="updateEvent"
+    />
+
+    <EventDetailModal
+      v-model:open="isDetailOpen"
+      :event="detailEvent"
     />
   </div>
 </template>

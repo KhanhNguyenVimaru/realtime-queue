@@ -11,7 +11,7 @@ class EventQueryBuilder
     public static function buildQuery(Request $request): Builder
     {
         return static::apply(
-            Event::query()->select(['id', 'host_id', 'title', 'description', 'starts_at', 'ends_at', 'created_at', 'updated_at']),
+            Event::query()->select(['id', 'host_id', 'title', 'description', 'img', 'starts_at', 'ends_at', 'created_at', 'updated_at']),
             $request->only(['search', 'sort_by', 'host_id'])
         );
     }

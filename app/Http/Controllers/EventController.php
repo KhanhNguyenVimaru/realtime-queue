@@ -11,16 +11,13 @@ use Illuminate\Http\JsonResponse;
 
 class EventController extends Controller
 {
-    public function __construct(private EventService $eventService)
-    {
+    public function __construct(private EventService $eventService){
     }
 
     public function index(): JsonResponse
     {
         return response()->json([
-            'events' => EventQueryBuilder::buildQuery(request())
-                ->get()
-                ->map(fn (Event $event) => $this->eventPayload($event)),
+            'events' => EventQueryBuilder::buildQuery(request())->get(),
         ]);
     }
 
@@ -30,15 +27,8 @@ class EventController extends Controller
 
         return response()->json([
             'message' => 'Event created successfully.',
-            'event' => $this->eventPayload($event->fresh()),
+            'event' => $event->fresh(),
         ], 201);
-    }
-
-    public function show(Event $event): JsonResponse
-    {
-        return response()->json([
-            'event' => $this->eventPayload($event),
-        ]);
     }
 
     public function update(UpdateEventRequest $request, Event $event): JsonResponse
@@ -47,7 +37,7 @@ class EventController extends Controller
 
         return response()->json([
             'message' => 'Event updated successfully.',
-            'event' => $this->eventPayload($event->fresh()),
+            'event' => $event->fresh(),
         ]);
     }
 
@@ -60,17 +50,4 @@ class EventController extends Controller
         ]);
     }
 
-    private function eventPayload(Event $event): array
-    {
-        return [
-            'id' => $event->id,
-            'host_id' => $event->host_id,
-            'title' => $event->title,
-            'description' => $event->description,
-            'starts_at' => optional($event->starts_at)?->toIso8601String(),
-            'ends_at' => optional($event->ends_at)?->toIso8601String(),
-            'created_at' => optional($event->created_at)?->toIso8601String(),
-            'updated_at' => optional($event->updated_at)?->toIso8601String(),
-        ];
-    }
 }

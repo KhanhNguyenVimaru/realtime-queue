@@ -25,6 +25,7 @@ class UpdateEventRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'img' => ['nullable', 'string', 'max:500000'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
         ];

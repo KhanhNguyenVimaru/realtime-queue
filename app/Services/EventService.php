@@ -12,6 +12,7 @@ class EventService
             'host_id' => $hostId,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
+            'img' => $data['img'] ?? null,
             'starts_at' => $data['starts_at'] ?? null,
             'ends_at' => $data['ends_at'] ?? null,
         ]);
@@ -25,6 +26,7 @@ class EventService
         $event->forceFill([
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
+            'img' => $data['img'] ?? null,
             'starts_at' => $data['starts_at'] ?? null,
             'ends_at' => $data['ends_at'] ?? null,
         ]);

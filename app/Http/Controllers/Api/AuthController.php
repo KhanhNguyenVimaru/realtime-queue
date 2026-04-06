@@ -102,6 +102,27 @@ class AuthController extends Controller
         ]);
     }
 
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+
+        if (! $user) {
+            return $this->unauthorizedResponse('Authenticated user could not be resolved.');
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($data['password']),
+        ])->save();
+
+        return response()->json([
+            'message' => 'Password updated successfully.',
+        ]);
+    }
+
     public function logout(Request $request): JsonResponse
     {
         $currentAccessTokenId = optional($request->user()?->token())->id;

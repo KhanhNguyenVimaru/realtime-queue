@@ -17,6 +17,7 @@ class Event extends Model
         'host_id',
         'title',
         'description',
+        'img',
         'starts_at',
         'ends_at',
     ];

@@ -13,6 +13,9 @@ const form = reactive({
   password_confirmation: ''
 })
 
+const showPassword = ref(false)
+const showPasswordConfirmation = ref(false)
+
 onMounted(async () => {
   auth.lastError = null
   await auth.initialize()
@@ -77,11 +80,47 @@ async function handleRegister() {
               </UFormField>
 
               <UFormField label="Password" name="password">
-                <UInput v-model="form.password" type="password" size="xl" autocomplete="new-password" class="w-full" />
+                <UInput
+                  v-model="form.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  size="xl"
+                  autocomplete="new-password"
+                  class="w-full"
+                >
+                  <template #trailing>
+                    <UButton
+                      type="button"
+                      color="neutral"
+                      variant="ghost"
+                      size="xs"
+                      :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                      :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                      @click="showPassword = !showPassword"
+                    />
+                  </template>
+                </UInput>
               </UFormField>
 
               <UFormField label="Confirm password" name="password_confirmation">
-                <UInput v-model="form.password_confirmation" type="password" size="xl" autocomplete="new-password" class="w-full" />
+                <UInput
+                  v-model="form.password_confirmation"
+                  :type="showPasswordConfirmation ? 'text' : 'password'"
+                  size="xl"
+                  autocomplete="new-password"
+                  class="w-full"
+                >
+                  <template #trailing>
+                    <UButton
+                      type="button"
+                      color="neutral"
+                      variant="ghost"
+                      size="xs"
+                      :icon="showPasswordConfirmation ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                      :aria-label="showPasswordConfirmation ? 'Hide password' : 'Show password'"
+                      @click="showPasswordConfirmation = !showPasswordConfirmation"
+                    />
+                  </template>
+                </UInput>
               </UFormField>
 
               <UAlert

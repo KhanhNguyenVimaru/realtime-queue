@@ -39,6 +39,8 @@ const form = reactive<UserPayload>({
   role: 'user',
 })
 
+const showPassword = ref(false)
+
 watch(
   () => props.user,
   (user) => {
@@ -73,7 +75,24 @@ function submitForm() {
         </UFormField>
 
         <UFormField label="Password" name="edit-password">
-          <UInput v-model="form.password" type="password" placeholder="Leave blank to keep current password" class="w-full" />
+          <UInput
+            v-model="form.password"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="Leave blank to keep current password"
+            class="w-full"
+          >
+            <template #trailing>
+              <UButton
+                type="button"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                @click="showPassword = !showPassword"
+              />
+            </template>
+          </UInput>
         </UFormField>
 
         <UFormField label="Role" name="edit-role">

@@ -11,6 +11,8 @@ const form = reactive({
   password: ''
 })
 
+const showPassword = ref(false)
+
 onMounted(async () => {
   auth.lastError = null
   await auth.initialize()
@@ -67,7 +69,25 @@ async function handleLogin() {
               </UFormField>
 
               <UFormField label="Password" name="password">
-                <UInput v-model="form.password" type="password" size="xl" autocomplete="current-password" class="w-full" />
+                <UInput
+                  v-model="form.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  size="xl"
+                  autocomplete="current-password"
+                  class="w-full"
+                >
+                  <template #trailing>
+                    <UButton
+                      type="button"
+                      color="neutral"
+                      variant="ghost"
+                      size="xs"
+                      :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                      :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                      @click="showPassword = !showPassword"
+                    />
+                  </template>
+                </UInput>
               </UFormField>
 
               <UAlert

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\DestroyAdminUserRequest;
 use App\Http\Requests\StoreAdminUserRequest;
 use App\Http\Requests\UpdateAdminUserRequest;
 use App\Models\User;
@@ -24,20 +23,13 @@ class AdminUserController extends Controller
         ]);
     }
 
-    public function show(User $user): JsonResponse
-    {
-        return response()->json([
-            'user' => $this->userPayload($user),
-        ]);
-    }
-
     public function store(StoreAdminUserRequest $request): JsonResponse
     {
         $user = $this->adminUserService->create($request->validated());
 
         return response()->json([
             'message' => 'User created successfully.',
-            'user' => $this->userPayload($user->fresh()),
+            'user' => user_payload($user->fresh()),
         ], 201);
     }
 
@@ -47,11 +39,11 @@ class AdminUserController extends Controller
 
         return response()->json([
             'message' => 'User updated successfully.',
-            'user' => $this->userPayload($user->fresh()),
+            'user' => user_payload($user->fresh()),
         ]);
     }
 
-    public function destroy(DestroyAdminUserRequest $request, User $user): JsonResponse
+    public function destroy(User $user): JsonResponse
     {
         $user->delete();
 
@@ -60,15 +52,4 @@ class AdminUserController extends Controller
         ]);
     }
 
-    private function userPayload(User $user): array
-    {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'created_at' => optional($user->created_at)?->toIso8601String(),
-            'updated_at' => optional($user->updated_at)?->toIso8601String(),
-        ];
-    }
 }
