@@ -3,21 +3,24 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DestroyAdminUserRequest;
+use App\Http\Requests\StoreAdminUserRequest;
+use App\Http\Requests\UpdateAdminUserRequest;
 use App\Models\User;
+use App\QueryBuilders\UserQueryBuilder;
+use App\Services\AdminUserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class AdminUserController extends Controller
 {
-    public function index(): JsonResponse
+    public function __construct(private AdminUserService $adminUserService) {
+    }
+
+    public function index(Request $request): JsonResponse
     {
         return response()->json([
-            'users' => User::query()
-                ->select(['id', 'name', 'email', 'role', 'created_at', 'updated_at'])
-                ->latest()
-                ->get(),
+            'users' => UserQueryBuilder::buildQuery($request)->get(),
         ]);
     }
 
@@ -28,21 +31,9 @@ class AdminUserController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreAdminUserRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
-            'role' => ['required', Rule::in(['admin', 'user'])],
-        ]);
-
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => $data['role'],
-        ]);
+        $user = $this->adminUserService->create($request->validated());
 
         return response()->json([
             'message' => 'User created successfully.',
@@ -50,32 +41,9 @@ class AdminUserController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, User $user): JsonResponse
+    public function update(UpdateAdminUserRequest $request, User $user): JsonResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'password' => ['nullable', 'string', 'min:8'],
-            'role' => ['required', Rule::in(['admin', 'user'])],
-        ]);
-
-        if ((int) $request->user()->id === (int) $user->id && $data['role'] !== 'admin') {
-            return response()->json([
-                'message' => 'You cannot remove your own admin role.',
-            ], 422);
-        }
-
-        $user->fill([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'role' => $data['role'],
-        ]);
-
-        if (! empty($data['password'])) {
-            $user->password = Hash::make($data['password']);
-        }
-
-        $user->save();
+        $user = $this->adminUserService->update($user, $request->validated());
 
         return response()->json([
             'message' => 'User updated successfully.',
@@ -83,14 +51,8 @@ class AdminUserController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, User $user): JsonResponse
+    public function destroy(DestroyAdminUserRequest $request, User $user): JsonResponse
     {
-        if ((int) $request->user()->id === (int) $user->id) {
-            return response()->json([
-                'message' => 'You cannot delete your own account.',
-            ], 422);
-        }
-
         $user->delete();
 
         return response()->json([

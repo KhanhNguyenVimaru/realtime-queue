@@ -20,6 +20,10 @@ export default defineNuxtConfig({
     }
   },
 
+  imports: {
+    dirs: ['app/stores']
+  },
+
   vite: {
     plugins: [
       tailwindcss()

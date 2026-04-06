@@ -89,7 +89,7 @@ function toggleColorMode() {
     </header>
 
     <main>
-      <UContainer class="max-w-5xl px-4 py-8 sm:py-10">
+      <UContainer class="max-w-5xl px-4 py-6">
         <slot />
       </UContainer>
     </main>

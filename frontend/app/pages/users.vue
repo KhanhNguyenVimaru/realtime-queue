@@ -33,11 +33,19 @@ const pageError = ref('')
 const formError = ref('')
 const deleteError = ref('')
 
-const isDetailOpen = ref(false)
 const isEditOpen = ref(false)
 
-const selectedUser = ref<UserRow | null>(null)
 const editingUser = ref<UserRow | null>(null)
+
+const search = ref('')
+const role = ref<'admin' | 'user' | null>(null)
+const sortBy = ref<'latest' | 'oldest'>('latest')
+
+const roleOptions = [
+  { label: 'All roles', value: null },
+  { label: 'Admin', value: 'admin' },
+  { label: 'User', value: 'user' },
+]
 
 const headers = [
   'ID',
@@ -83,30 +91,39 @@ function readError(error: unknown, fallback: string) {
   return fetchError.data?.message || fetchError.statusMessage || fetchError.message || fallback
 }
 
+function buildQuery() {
+  const params = new URLSearchParams()
+
+  const term = search.value.trim()
+  if (term) {
+    params.set('search', term)
+  }
+
+  if (role.value) {
+    params.set('role', role.value)
+  }
+
+  if (sortBy.value) {
+    params.set('sort_by', sortBy.value)
+  }
+
+  const query = params.toString()
+  return query ? `/admin/users?${query}` : '/admin/users'
+}
+
+function toggleSort() {
+  sortBy.value = sortBy.value === 'latest' ? 'oldest' : 'latest'
+}
+
 async function fetchUsers() {
   pending.value = true
   pageError.value = ''
 
   try {
-    const response = await auth.request<{ users: UserRow[] }>('/admin/users')
+    const response = await auth.request<{ users: UserRow[] }>(buildQuery())
     users.value = response.users
   } catch (error) {
     pageError.value = readError(error, 'Unable to load users.')
-  } finally {
-    pending.value = false
-  }
-}
-
-async function openDetail(userId: number) {
-  pending.value = true
-  pageError.value = ''
-
-  try {
-    const response = await auth.request<{ user: UserRow }>(`/admin/users/${userId}`)
-    selectedUser.value = response.user
-    isDetailOpen.value = true
-  } catch (error) {
-    pageError.value = readError(error, 'Unable to load user details.')
   } finally {
     pending.value = false
   }
@@ -168,10 +185,48 @@ async function deleteUser(user: UserRow) {
 onMounted(async () => {
   await fetchUsers()
 })
+
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
+
+watch(search, () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+
+  searchTimeout = setTimeout(() => {
+    fetchUsers()
+  }, 350)
+})
+
+watch([role, sortBy], () => {
+  fetchUsers()
+})
 </script>
 
 <template>
   <div class="space-y-6">
+    <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-end">
+      <div class="flex w-full flex-col gap-3 md:w-1/2 md:flex-row md:justify-end">
+        <UFormField name="search-users" class="w-full">
+          <UInput v-model="search" placeholder="Search by id, name, email" class="w-full" />
+        </UFormField>
+
+        <UFormField name="filter-role" class="w-full md:max-w-[180px]">
+          <USelect v-model="role" :items="roleOptions" value-key="value" class="w-full" />
+        </UFormField>
+      </div>
+
+      <UButton
+        color="primary"
+        variant="solid"
+        class="md:ml-3 w-fit"
+        icon="i-lucide-arrow-up-down"
+        @click="toggleSort"
+      >
+        {{ sortBy === 'latest' ? 'Newest' : 'Oldest' }}
+      </UButton>
+    </div>
+
     <UAlert
       v-if="pageError"
       color="error"
@@ -222,7 +277,6 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-4">
                 <div class="flex flex-wrap gap-2">
-                  <USkeleton class="h-8 w-20 rounded-md" />
                   <USkeleton class="h-8 w-16 rounded-md" />
                   <USkeleton class="h-8 w-20 rounded-md" />
                 </div>
@@ -249,16 +303,6 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-4">
                 <div class="flex flex-wrap gap-2">
-                  <UButton
-                    color="neutral"
-                    variant="soft"
-                    size="sm"
-                    icon="i-lucide-eye"
-                    @click="openDetail(user.id)"
-                  >
-                    Detail
-                  </UButton>
-
                   <UButton
                     color="primary"
                     variant="soft"
@@ -291,14 +335,12 @@ onMounted(async () => {
         </table>
       </div>
     </UCard>
+    <UserEditModal
+      v-model:open="isEditOpen"
+      :user="editingUser"
+      :pending="pending"
+      :error="formError"
+      @submit="updateUser"
+    />
   </div>
-
-  <UserDetailModal v-model:open="isDetailOpen" :user="selectedUser" />
-  <UserEditModal
-    v-model:open="isEditOpen"
-    :user="editingUser"
-    :pending="pending"
-    :error="formError"
-    @submit="updateUser"
-  />
 </template>

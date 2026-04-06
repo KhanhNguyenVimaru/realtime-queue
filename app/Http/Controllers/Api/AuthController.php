@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,20 +18,14 @@ class AuthController extends Controller
 {
     private const REFRESH_COOKIE = 'realtime-queue-core';
 
-    public function register(Request $request): JsonResponse
+    public function __construct(private AuthService $authService)
     {
-        $credentials = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+    }
 
-        $user = User::create([
-            'name' => $credentials['name'],
-            'email' => $credentials['email'],
-            'password' => Hash::make($credentials['password']),
-            'role' => 'user',
-        ]);
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $credentials = $request->validated();
+        $user = $this->authService->register($credentials);
 
         return $this->issueTokenPair($request, [
             'grant_type' => 'password',
@@ -38,14 +35,10 @@ class AuthController extends Controller
         ], $user, 201);
     }
 
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
-
-        $user = User::where('email', $credentials['email'])->first();
+        $credentials = $request->validated();
+        $user = $this->authService->findByEmail($credentials['email']);
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
