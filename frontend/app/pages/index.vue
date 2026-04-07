@@ -101,8 +101,8 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <UButton to="/events" color="primary" variant="soft" icon="i-lucide-calendar-days">
-        Manage events
+      <UButton to=  "/events" color="primary" variant="soft" icon="i-lucide-calendar-days">
+        My events
       </UButton>
     </div>
 

@@ -48,7 +48,9 @@ const detail = computed(() => ({
             </UFormField>
 
             <UFormField label="Description" name="event-description">
-              <UTextarea :model-value="detail.description" class="w-full" readonly />
+              <div class="min-h-[120px] whitespace-pre-wrap rounded-md border border-default bg-muted/10 px-3 py-2 text-sm text-toned">
+                {{ detail.description || 'No description provided.' }}
+              </div>
             </UFormField>
 
             <UFormField label="Starts at" name="event-start">

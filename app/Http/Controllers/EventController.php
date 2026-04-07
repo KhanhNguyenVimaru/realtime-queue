@@ -21,6 +21,13 @@ class EventController extends Controller
         ]);
     }
 
+    public function show(Event $event): JsonResponse
+    {
+        return response()->json([
+            'event' => $event,
+        ]);
+    }
+
     public function store(StoreEventRequest $request): JsonResponse
     {
         $event = $this->eventService->create($request->user()->id, $request->validated());

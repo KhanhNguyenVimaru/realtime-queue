@@ -30,6 +30,7 @@ type EventPayload = {
 }
 
 const auth = useAuthStore()
+const toast = useToast()
 
 const events = ref<EventRow[]>([])
 const pending = ref(false)
@@ -182,10 +183,59 @@ async function updateEvent(payload: EventPayload) {
   }
 }
 
+function confirmDelete(event: EventRow) {
+  return new Promise<boolean>((resolve) => {
+    let resolved = false
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+    const finalize = (value: boolean) => {
+      if (resolved) {
+        return
+      }
+      resolved = true
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      resolve(value)
+    }
+
+    const toastItem = toast.add({
+      title: 'Delete event?',
+      description: `Delete event "${event.title}"?`,
+      color: 'warning',
+      duration: 5000,
+      actions: [
+        {
+          label: 'Cancel',
+          color: 'neutral',
+          variant: 'ghost',
+          onClick: () => {
+            finalize(false)
+            toast.remove(toastItem.id)
+          },
+        },
+        {
+          label: 'OK',
+          color: 'error',
+          onClick: () => {
+            finalize(true)
+            toast.remove(toastItem.id)
+          },
+        },
+      ],
+    })
+
+    timeoutId = setTimeout(() => {
+      toast.remove(toastItem.id)
+      finalize(false)
+    }, 5200)
+  })
+}
+
 async function deleteEvent(event: EventRow) {
   deleteError.value = ''
 
-  const confirmed = window.confirm(`Delete event "${event.title}"?`)
+  const confirmed = await confirmDelete(event)
   if (!confirmed) {
     return
   }

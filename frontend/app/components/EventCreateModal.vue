@@ -136,7 +136,12 @@ function submitForm() {
             </UFormField>
 
             <UFormField label="Description" name="event-description">
-              <UTextarea v-model="form.description" placeholder="Description" class="w-full" />
+              <UTextarea
+                v-model="form.description"
+                placeholder="Description"
+                class="w-full min-h-[160px] resize-y"
+                :rows="6"
+              />
             </UFormField>
 
             <UFormField label="Starts at" name="event-start">

@@ -51,9 +51,13 @@ function formatDate(value: string | null) {
     </div>
 
     <div class="space-y-2 p-4">
-      <h2 class="line-clamp-1 text-lg font-semibold text-highlighted transition-colors duration-200 group-hover:text-primary">
+      <NuxtLink
+        :to="{ path: '/event-info', query: { id: props.event.id } }"
+        class="line-clamp-1 text-lg font-semibold text-highlighted transition-colors duration-200 hover:text-primary group-hover:text-primary"
+        :aria-label="`View event ${props.event.title}`"
+      >
         {{ props.event.title }}
-      </h2>
+      </NuxtLink>
       <p class="line-clamp-1 text-sm text-toned">
         {{ props.event.description || 'No description provided.' }}
       </p>
