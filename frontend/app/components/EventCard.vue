@@ -13,6 +13,14 @@ type EventRow = {
 
 const props = defineProps<{
   event: EventRow
+  joinedCount?: number
+  enrollPending?: boolean
+  joined?: boolean
+}>()
+
+const emit = defineEmits<{
+  enroll: [event: EventRow]
+  leave: [event: EventRow]
 }>()
 
 function parseDate(value: string | null) {
@@ -69,6 +77,32 @@ function formatDate(value: string | null) {
       <div class="text-xs text-muted">
         <span class="font-semibold text-toned">Ends:</span>
         {{ formatDate(props.event.ends_at) }}
+      </div>
+
+      <div class="flex items-center justify-between gap-3 pt-2">
+        <UButton
+          v-if="!props.joined"
+          size="sm"
+          color="primary"
+          variant="soft"
+          :loading="props.enrollPending"
+          @click="emit('enroll', props.event)"
+        >
+          Enroll
+        </UButton>
+        <UButton
+          v-else
+          size="sm"
+          color="error"
+          variant="soft"
+          :loading="props.enrollPending"
+          @click="emit('leave', props.event)"
+        >
+          Leave
+        </UButton>
+        <div class="rounded-md bg-muted/30 px-2 py-1 text-xs text-muted">
+          Joined: <span class="font-semibold text-highlighted">{{ props.joinedCount ?? 0 }}</span>
+        </div>
       </div>
     </div>
   </UCard>

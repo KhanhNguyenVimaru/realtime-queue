@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function (): void {
@@ -30,4 +31,6 @@ Route::middleware('auth:api')->group(function (): void {
     Route::post('/events', [EventController::class, 'store']);
     Route::put('/events/{event}', [EventController::class, 'update']);
     Route::delete('/events/{event}', [EventController::class, 'destroy']);
+    Route::post('/events/{event}/join', [EventUserController::class, 'join']);
+    Route::post('/events/{event}/leave', [EventUserController::class, 'leave']);
 });

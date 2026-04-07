@@ -69,7 +69,7 @@ function toLocalInput(value: string | null) {
 
 watch(
   () => props.event,
-  (event) => {
+  (event: EventRow | null) => {
     form.title = event?.title ?? ''
     form.description = event?.description ?? ''
     form.starts_at = toLocalInput(event?.starts_at ?? null)
@@ -114,7 +114,7 @@ async function handleImageChange(file: File | null) {
   }
 }
 
-watch(uploadFile, (file) => {
+watch(uploadFile, (file: File | null) => {
   handleImageChange(file ?? null)
 })
 

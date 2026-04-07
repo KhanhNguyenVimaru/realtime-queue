@@ -3,64 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Models\EventUser;
-use App\Http\Requests\StoreEventUserRequest;
-use App\Http\Requests\UpdateEventUserRequest;
+use App\Models\Event;
+use App\Jobs\UpdateEventAttendeeCount;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class EventUserController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function join(Request $request, Event $event): JsonResponse
     {
-        //
+        $user = $request->user();
+
+        $eventUser = EventUser::updateOrCreate(
+            ['event_id' => $event->id, 'user_id' => $user->id],
+            ['status' => EventUser::STATUS_JOINED],
+        );
+
+        UpdateEventAttendeeCount::dispatch($event->id);
+
+        return response()->json([
+            'message' => 'Joined event successfully.',
+            'event_user' => $eventUser->fresh(),
+        ], 202);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function leave(Request $request, Event $event): JsonResponse
     {
-        //
-    }
+        $user = $request->user();
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreEventUserRequest $request)
-    {
-        //
-    }
+        $eventUser = EventUser::query()
+            ->where('event_id', $event->id)
+            ->where('user_id', $user->id)
+            ->first();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(EventUser $eventUser)
-    {
-        //
-    }
+        if ($eventUser) {
+            $eventUser->delete();
+            UpdateEventAttendeeCount::dispatch($event->id);
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(EventUser $eventUser)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateEventUserRequest $request, EventUser $eventUser)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(EventUser $eventUser)
-    {
-        //
+        return response()->json([
+            'message' => 'Left event successfully.',
+        ]);
     }
 }

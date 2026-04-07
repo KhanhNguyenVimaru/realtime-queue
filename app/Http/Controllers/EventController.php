@@ -17,7 +17,7 @@ class EventController extends Controller
     public function index(): JsonResponse
     {
         return response()->json([
-            'events' => EventQueryBuilder::buildQuery(request())->get(),
+            'events' => EventQueryBuilder::buildQuery(request(), request()->user()?->id)->get(),
         ]);
     }
 

@@ -16,7 +16,12 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: 'http://127.0.0.1:8000/api'
+      apiBase: 'http://127.0.0.1:8000/api',
+      pusherKey: 'local',
+      pusherCluster: 'mt1',
+      pusherHost: '127.0.0.1',
+      pusherPort: '6001',
+      pusherScheme: 'http'
     }
   },
 
