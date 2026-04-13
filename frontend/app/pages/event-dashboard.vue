@@ -31,17 +31,32 @@ type EventLogRow = {
   } | null
 }
 
+type EventUserRow = {
+  id: number
+  name: string
+  email: string
+  role: 'admin' | 'user' | string
+  created_at: string | null
+  updated_at: string | null
+}
+
 const auth = useAuthStore()
 const route = useRoute()
 
 const event = ref<EventRow | null>(null)
 const logs = ref<EventLogRow[]>([])
+const eventUsers = ref<EventUserRow[]>([])
 const logPage = ref(1)
 const logLastPage = ref(1)
 const logTotal = ref(0)
+const userPage = ref(1)
+const userLastPage = ref(1)
+const userTotal = ref(0)
 const pending = ref(false)
 const logsPending = ref(false)
+const usersPending = ref(false)
 const pageError = ref('')
+const usersError = ref('')
 const loading = computed(() => pending.value && !event.value)
 
 const weekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -89,17 +104,23 @@ const eventId = computed(() => {
   return Number.isNaN(parsed) ? null : parsed
 })
 
-type LogMeta = {
+type PaginationMeta = {
   current_page: number
   last_page: number
   per_page: number
   total: number
 }
 
-function setLogMeta(meta: LogMeta) {
+function setLogMeta(meta: PaginationMeta) {
   logPage.value = meta.current_page
   logLastPage.value = meta.last_page
   logTotal.value = meta.total
+}
+
+function setUserMeta(meta: PaginationMeta) {
+  userPage.value = meta.current_page
+  userLastPage.value = meta.last_page
+  userTotal.value = meta.total
 }
 
 async function fetchEvent(options: { page?: number, append?: boolean } = {}) {
@@ -107,6 +128,7 @@ async function fetchEvent(options: { page?: number, append?: boolean } = {}) {
     pageError.value = 'Event id is invalid.'
     event.value = null
     logs.value = []
+    eventUsers.value = []
     return
   }
 
@@ -121,7 +143,7 @@ async function fetchEvent(options: { page?: number, append?: boolean } = {}) {
   pageError.value = ''
 
   try {
-    const response = await auth.request<{ event: EventRow, logs?: EventLogRow[], meta?: LogMeta }>(
+    const response = await auth.request<{ event: EventRow, logs?: EventLogRow[], meta?: PaginationMeta }>(
       `/events/${eventId.value}/dashboard?per_page=10&page=${page}`
     )
     event.value = response.event
@@ -134,6 +156,29 @@ async function fetchEvent(options: { page?: number, append?: boolean } = {}) {
   } finally {
     pending.value = false
     logsPending.value = false
+  }
+}
+
+async function fetchEventUsers(page = 1) {
+  if (!eventId.value) {
+    usersError.value = 'Event id is invalid.'
+    eventUsers.value = []
+    return
+  }
+
+  usersPending.value = true
+  usersError.value = ''
+
+  try {
+    const response = await auth.request<{ users: EventUserRow[], meta: PaginationMeta }>(
+      `/events/${eventId.value}/users?per_page=10&page=${page}`
+    )
+    eventUsers.value = response.users
+    setUserMeta(response.meta)
+  } catch (error) {
+    usersError.value = readError(error, 'Unable to load event users.')
+  } finally {
+    usersPending.value = false
   }
 }
 
@@ -294,7 +339,7 @@ function unsubscribeEvent(eventIdValue: number) {
   subscribedIds.delete(eventIdValue)
 }
 
-watch(eventId, async (newId: number | null, oldId: number | null) => {
+watch(() => eventId.value, async (newId, oldId) => {
   if (typeof oldId === 'number') {
     unsubscribeEvent(oldId)
   }
@@ -302,10 +347,14 @@ watch(eventId, async (newId: number | null, oldId: number | null) => {
   if (!newId) {
     event.value = null
     logs.value = []
+    eventUsers.value = []
     return
   }
 
-  await fetchEvent()
+  await Promise.all([
+    fetchEvent(),
+    fetchEventUsers(1),
+  ])
   subscribeEvent(newId)
 }, { immediate: true })
 
@@ -321,6 +370,14 @@ async function loadMoreLogs() {
   }
 
   await fetchEvent({ page: logPage.value + 1, append: true })
+}
+
+async function goToUserPage(page: number) {
+  if (page < 1 || page > userLastPage.value || page === userPage.value || usersPending.value) {
+    return
+  }
+
+  await fetchEventUsers(page)
 }
 </script>
 
@@ -520,6 +577,100 @@ async function loadMoreLogs() {
             >
               View more
             </UButton>
+          </div>
+        </div>
+      </UCard>
+
+      <UCard class="overflow-hidden lg:col-span-2">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-semibold text-highlighted">
+                Event Users
+              </p>
+              <p class="text-xs text-muted">
+                All users registered in this event
+              </p>
+            </div>
+            <div class="text-xs text-muted">
+              Total {{ userTotal }}
+            </div>
+          </div>
+
+          <UAlert
+            v-if="usersError"
+            color="error"
+            variant="subtle"
+            title="Request failed"
+            :description="usersError"
+          />
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-default">
+              <thead class="bg-muted/40">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">ID</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Name</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Email</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Role</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Created</th>
+                </tr>
+              </thead>
+
+              <tbody class="divide-y divide-default">
+                <tr v-if="usersPending" v-for="index in 4" :key="`event-user-skeleton-${index}`">
+                  <td class="px-4 py-4"><USkeleton class="h-5 w-10" /></td>
+                  <td class="px-4 py-4"><USkeleton class="h-5 w-32" /></td>
+                  <td class="px-4 py-4"><USkeleton class="h-5 w-48" /></td>
+                  <td class="px-4 py-4"><USkeleton class="h-6 w-16 rounded-full" /></td>
+                  <td class="px-4 py-4"><USkeleton class="h-5 w-32" /></td>
+                </tr>
+
+                <tr v-else v-for="user in eventUsers" :key="user.id">
+                  <td class="px-4 py-4 text-sm text-toned">{{ user.id }}</td>
+                  <td class="px-4 py-4 text-sm font-medium text-highlighted">{{ user.name }}</td>
+                  <td class="px-4 py-4 text-sm text-toned">{{ user.email }}</td>
+                  <td class="px-4 py-4 text-sm">
+                    <UBadge :color="user.role === 'admin' ? 'primary' : 'neutral'" variant="soft">
+                      {{ user.role }}
+                    </UBadge>
+                  </td>
+                  <td class="px-4 py-4 text-sm text-toned">{{ formatLogTime(user.created_at) }}</td>
+                </tr>
+
+                <tr v-if="!eventUsers.length && !usersPending">
+                  <td colspan="5" class="px-4 py-10 text-center text-sm text-muted">
+                    No users found for this event.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex items-center justify-between border-t border-default pt-3 text-sm text-muted">
+            <div>
+              Page {{ userPage }} / {{ userLastPage }}
+            </div>
+            <div class="flex gap-2">
+              <UButton
+                color="neutral"
+                variant="soft"
+                size="sm"
+                :disabled="userPage <= 1 || usersPending"
+                @click="goToUserPage(userPage - 1)"
+              >
+                Previous
+              </UButton>
+              <UButton
+                color="neutral"
+                variant="soft"
+                size="sm"
+                :disabled="userPage >= userLastPage || usersPending"
+                @click="goToUserPage(userPage + 1)"
+              >
+                Next
+              </UButton>
+            </div>
           </div>
         </div>
       </UCard>

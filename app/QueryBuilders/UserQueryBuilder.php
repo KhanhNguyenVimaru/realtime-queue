@@ -8,6 +8,17 @@ use Illuminate\Http\Request;
 
 class UserQueryBuilder
 {
+    public static function buildByEventId(int $eventId): Builder
+    {
+        return User::query()
+            ->select(['id', 'name', 'email', 'role', 'created_at', 'updated_at'])
+            ->whereIn('id', function ($query) use ($eventId): void {
+                $query->from('event_user')
+                    ->select('user_id')
+                    ->where('event_id', $eventId);
+            });
+    }
+
     public static function buildQuery(Request $request): Builder
     {
         return static::apply(

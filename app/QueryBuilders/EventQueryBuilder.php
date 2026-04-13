@@ -6,20 +6,43 @@ use App\Models\Event;
 use App\Models\EventLog;
 use App\Models\EventUser;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class EventQueryBuilder
 {
+    public static function paginateIndex(Request $request): LengthAwarePaginator
+    {
+        $perPage = max(1, min($request->integer('per_page', 10), 100));
+
+        return static::buildQuery(
+            $request->only(['search', 'sort_by', 'host_id', 'end_date', 'joined_only']),
+            $request->user()?->id
+        )->paginate($perPage);
+    }
+
+    public static function findDetail(int $eventId, ?int $userId): Event
+    {
+        return static::applyEnrollmentMeta(
+            Event::query()->select(['id', 'host_id', 'title', 'description', 'img', 'limit', 'starts_at', 'ends_at', 'created_at', 'updated_at']),
+            $userId
+        )
+            ->whereKey($eventId)
+            ->firstOrFail();
+    }
+
     public static function buildQuery(array $filters, ?int $userId = null): Builder
     {
         $query = static::apply(
             Event::query()->select(['id', 'host_id', 'title', 'description', 'img', 'limit', 'starts_at', 'ends_at', 'created_at', 'updated_at']),
-            $filters
+            $filters,
+            $userId
         );
 
         return static::applyEnrollmentMeta($query, $userId);
     }
 
-    public static function apply(Builder $query, array $filters): Builder
+    public static function apply(Builder $query, array $filters, ?int $userId = null): Builder
     {
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
@@ -47,6 +70,19 @@ class EventQueryBuilder
         $endDate = $filters['end_date'] ?? null;
         if ($endDate !== null && $endDate !== '') {
             $query->whereDate('ends_at', $endDate);
+        }
+
+        $joinedOnly = filter_var($filters['joined_only'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($joinedOnly) {
+            if (! $userId) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereHas('attendees', function (Builder $attendees) use ($userId): void {
+                    $attendees
+                        ->where('event_user.status', EventUser::STATUS_JOINED)
+                        ->where('users.id', $userId);
+                });
+            }
         }
 
         return $query;
@@ -77,12 +113,7 @@ class EventQueryBuilder
 
     public static function buildDashboardPayload(Event $event, ?int $userId, int $perPage): array
     {
-        $detail = static::applyEnrollmentMeta(
-            Event::query()->select(['id', 'host_id', 'title', 'description', 'img', 'limit', 'starts_at', 'ends_at', 'created_at', 'updated_at']),
-            $userId
-        )
-            ->whereKey($event->id)
-            ->firstOrFail();
+        $detail = static::findDetail($event->id, $userId);
 
         $logs = EventLog::query()
             ->where('event_id', $event->id)

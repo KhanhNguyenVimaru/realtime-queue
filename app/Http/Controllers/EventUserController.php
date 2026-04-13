@@ -10,8 +10,7 @@ use Illuminate\Http\Request;
 
 class EventUserController extends Controller
 {
-    public function __construct(private EventUserService $eventUserService)
-    {
+    public function __construct(private EventUserService $eventUserService){
     }
 
     public function join(Request $request, Event $event): JsonResponse

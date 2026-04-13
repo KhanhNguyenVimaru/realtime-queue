@@ -49,6 +49,7 @@ const isFilterOpen = ref(false)
 const filterSearch = ref('')
 const filterSortBy = ref<'latest' | 'oldest'>('latest')
 const filterEndDate = ref('')
+const filterJoinedOnly = ref(false)
 const isFiltered = ref(false)
 
 const subscribedIds = new Set<number>()
@@ -153,6 +154,9 @@ async function fetchEvents(options: { page?: number, append?: boolean, filtered?
       const endDate = filterEndDate.value.trim()
       if (endDate) {
         params.set('end_date', endDate)
+      }
+      if (filterJoinedOnly.value) {
+        params.set('joined_only', '1')
       }
     }
 
@@ -296,10 +300,16 @@ function applyFilters() {
   fetchEvents({ page: 1, filtered: true })
 }
 
+function toggleJoinedOnly() {
+  filterJoinedOnly.value = !filterJoinedOnly.value
+  fetchEvents({ page: 1, filtered: true })
+}
+
 function resetFilters() {
   filterSearch.value = ''
   filterSortBy.value = 'latest'
   filterEndDate.value = ''
+  filterJoinedOnly.value = false
   isFilterOpen.value = false
   fetchEvents({ page: 1, filtered: false })
 }
@@ -320,6 +330,14 @@ function handleFilterUpdate(payload: { search: string, sortBy: 'latest' | 'oldes
       <div class="flex gap-2">
         <UButton color="neutral" variant="soft" icon="i-lucide-filter" @click="isFilterOpen = true">
           Filter
+        </UButton>
+        <UButton
+          :color="filterJoinedOnly ? 'primary' : 'neutral'"
+          :variant="filterJoinedOnly ? 'soft' : 'ghost'"
+          icon="i-lucide-user-check"
+          @click="toggleJoinedOnly"
+        >
+          Joined
         </UButton>
         <UButton color="neutral" variant="ghost" icon="i-lucide-refresh-ccw" @click="resetFilters">
           Refresh

@@ -195,7 +195,7 @@ function unsubscribeEvent(eventIdValue: number) {
   subscribedIds.delete(eventIdValue)
 }
 
-watch(eventId, async (newId: number | null, oldId: number | null) => {
+watch<number | null>(eventId, async (newId, oldId) => {
   if (typeof oldId === 'number') {
     unsubscribeEvent(oldId)
   }
